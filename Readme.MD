@@ -35,6 +35,8 @@ A full-stack web app to simulate **loan prepayment** and visualize its impact on
 
 ---
 
+## except dealy while calculating as it runs on free server wait probably for 1 minute.
+
 ## Setup Instructions
 
 ### Clone the repo
@@ -42,3 +44,4 @@ A full-stack web app to simulate **loan prepayment** and visualize its impact on
 ```bash
 git clone https://github.com/sravankumarreddy9/loan-prepayment-calculator.git
 cd loan-prepayment-calculator
+
