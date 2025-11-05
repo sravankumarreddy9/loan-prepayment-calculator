@@ -172,20 +172,35 @@ function App() {
               </Stack>
 
               {prepayments.length > 0 && (
-                <Box mt={2}>
-                  <Typography variant="subtitle1">
-                    Planned Prepayments:
-                  </Typography>
-                  {prepayments.map((p, i) => (
-                    <Chip
-                      key={i}
-                      label={`After EMI ${p.month} → ₹${p.amount}`}
-                      sx={{ m: 0.5 }}
-                      color="primary"
-                    />
-                  ))}
-                </Box>
-              )}
+  <Box mt={2}>
+    <Typography variant="subtitle1" gutterBottom>
+      Planned Prepayments:
+    </Typography>
+    <Stack direction="row" flexWrap="wrap" spacing={1}>
+      {prepayments.map((p, i) => (
+        <Chip
+          key={i}
+          label={`After EMI ${p.month} → ₹${Number(p.amount).toLocaleString("en-IN")}`}
+          onDelete={() => {
+            const updated = prepayments.filter((_, idx) => idx !== i);
+            setPrepayments(updated);
+          }}
+          sx={{
+            m: 0.5,
+            backgroundColor: "#e3f2fd",
+            "& .MuiChip-deleteIcon": {
+              color: "#1976d2",
+              "&:hover": { color: "#d32f2f" },
+            },
+          }}
+          color="primary"
+          variant="outlined"
+        />
+      ))}
+    </Stack>
+  </Box>
+)}
+
 
               <Divider sx={{ my: 2 }} />
 
