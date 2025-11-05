@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import LoanInsights from "./LoanInsights";
 import axios from "axios";
+import { Analytics } from "@vercel/analytics/react"
 import {
   Container,
   Grid,
