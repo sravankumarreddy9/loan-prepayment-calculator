@@ -1,0 +1,253 @@
+import React, { useState } from "react";
+import axios from "axios";
+import {
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Divider,
+  Box,
+  Chip,
+  Stack,
+} from "@mui/material";
+import { Bar } from "react-chartjs-2";
+import { Save, Calculate } from "@mui/icons-material";
+
+// ✅ FIX: Register chart elements
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+// ✅ MAIN COMPONENT STARTS HERE
+function App() {
+  const [principal, setPrincipal] = useState(3200000);
+  const [emi, setEmi] = useState(31231);
+  const [rate, setRate] = useState(8.35);
+  const [tenure, setTenure] = useState(180);
+  const [paidEmis, setPaidEmis] = useState(4);
+  const [prepayments, setPrepayments] = useState([]);
+  const [newPrepay, setNewPrepay] = useState({ month: "", amount: "" });
+  const [result, setResult] = useState(null);
+
+  const addPrepay = () => {
+    if (!newPrepay.month || !newPrepay.amount) return;
+    setPrepayments([...prepayments, newPrepay]);
+    setNewPrepay({ month: "", amount: "" });
+  };
+
+  const calculate = async () => {
+    const res = await axios.post("http://localhost:4000/api/reschedule", {
+      principal,
+      annualRate: rate,
+      emi,
+      totalTenure: tenure,
+      paidEmis,
+      prepayments,
+    });
+    setResult(res.data);
+  };
+
+  const chartData = result
+    ? {
+        labels: result.keepEMI.schedule.map((r) => `M${r.month}`),
+        datasets: [
+          {
+            label: "Principal Component",
+            data: result.keepEMI.schedule.map((r) => r.principal),
+            backgroundColor: "rgba(75, 192, 192, 0.6)",
+          },
+          {
+            label: "Interest Component",
+            data: result.keepEMI.schedule.map((r) => r.interest),
+            backgroundColor: "rgba(255, 99, 132, 0.6)",
+          },
+        ],
+      }
+    : null;
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography
+        variant="h4"
+        fontWeight={600}
+        textAlign="center"
+        gutterBottom
+        sx={{
+          background:
+            "linear-gradient(90deg, #0052D4 0%, #4364F7 50%, #6FB1FC 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+        }}
+      >
+        🏦 Loan Prepayment — Bank-Matching Calculator
+      </Typography>
+
+      <Grid container spacing={3}>
+        {/* Input Card */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ p: 2, boxShadow: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Loan Basics
+              </Typography>
+
+              <Stack spacing={2}>
+                <TextField
+                  label="Principal (₹)"
+                  value={principal}
+                  onChange={(e) => setPrincipal(Number(e.target.value))}
+                />
+                <TextField
+                  label="EMI (₹)"
+                  value={emi}
+                  onChange={(e) => setEmi(Number(e.target.value))}
+                />
+                <TextField
+                  label="Rate p.a. (%)"
+                  value={rate}
+                  onChange={(e) => setRate(Number(e.target.value))}
+                />
+                <TextField
+                  label="Tenure (months)"
+                  value={tenure}
+                  onChange={(e) => setTenure(Number(e.target.value))}
+                />
+                <TextField
+                  label="EMIs Paid"
+                  value={paidEmis}
+                  onChange={(e) => setPaidEmis(Number(e.target.value))}
+                />
+              </Stack>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="h6" gutterBottom>
+                Add a Prepayment
+              </Typography>
+
+              <Stack spacing={2}>
+                <TextField
+                  label="After which EMI number"
+                  value={newPrepay.month}
+                  onChange={(e) =>
+                    setNewPrepay({ ...newPrepay, month: e.target.value })
+                  }
+                />
+                <TextField
+                  label="Amount (₹)"
+                  value={newPrepay.amount}
+                  onChange={(e) =>
+                    setNewPrepay({ ...newPrepay, amount: e.target.value })
+                  }
+                />
+                <Button variant="contained" onClick={addPrepay}>
+                  Add Prepayment
+                </Button>
+              </Stack>
+
+              {prepayments.length > 0 && (
+                <Box mt={2}>
+                  <Typography variant="subtitle1">
+                    Planned Prepayments:
+                  </Typography>
+                  {prepayments.map((p, i) => (
+                    <Chip
+                      key={i}
+                      label={`After EMI ${p.month} → ₹${p.amount}`}
+                      sx={{ m: 0.5 }}
+                      color="primary"
+                    />
+                  ))}
+                </Box>
+              )}
+
+              <Divider sx={{ my: 2 }} />
+
+              <Stack direction="row" spacing={2} justifyContent="center">
+                <Button
+                  variant="contained"
+                  startIcon={<Calculate />}
+                  onClick={calculate}
+                >
+                  Calculate
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="success"
+                  startIcon={<Save />}
+                  onClick={() => window.print()}
+                >
+                  Export / Print
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Results Card */}
+        <Grid item xs={12} md={8}>
+          {result && (
+            <Card sx={{ p: 3, boxShadow: 4, background: "#f9fafc" }}>
+              <Typography variant="h6" gutterBottom>
+                📈 Result Summary
+              </Typography>
+
+              <Typography>
+                <b>Outstanding after prepayments:</b>{" "}
+                ₹{result.outstandingAfterPrepayments.toLocaleString("en-IN")}
+              </Typography>
+              <Typography sx={{ color: "#1976d2", mt: 1 }}>
+                <b>Keep EMI (Reduce Tenure):</b> Finish in{" "}
+                {result.keepEMI.monthsToFinish} months, Interest: ₹
+                {result.keepEMI.totalInterest.toLocaleString("en-IN")}
+              </Typography>
+              <Typography sx={{ color: "#2e7d32", mt: 1 }}>
+                <b>Reduce EMI (Keep Tenure):</b> New EMI: ₹
+                {result.reduceEMI.newEmi.toLocaleString("en-IN")}, Interest: ₹
+                {result.reduceEMI.totalInterest.toLocaleString("en-IN")}
+              </Typography>
+
+              <Box my={3}>
+                <Divider />
+              </Box>
+
+              <Typography variant="h6" gutterBottom>
+                Amortization Overview
+              </Typography>
+
+              {chartData && (
+                <Bar
+                  data={chartData}
+                  options={{
+                    plugins: {
+                      legend: { position: "bottom" },
+                      title: {
+                        display: true,
+                        text: "EMI Split (Principal vs Interest)",
+                      },
+                    },
+                    responsive: true,
+                  }}
+                />
+              )}
+            </Card>
+          )}
+        </Grid>
+      </Grid>
+    </Container>
+  );
+}
+
+// ✅ Required export so React recognizes it
+export default App;
