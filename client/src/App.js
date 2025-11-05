@@ -151,10 +151,22 @@ function App() {
             🏦 Loan Prepayment — Bank-Matching Calculator
           </Typography>
 
-          <FormControlLabel
-            control={<Switch checked={darkMode} onChange={() => setDarkMode(!darkMode)} />}
-            label="Dark Mode"
-          />
+         <Stack direction="row" alignItems="center" spacing={2}>
+  <Button
+    variant="outlined"
+    color="info"
+    onClick={() =>
+      window.open("https://economictimes.indiatimes.com/industry/banking/rssfeeds/13358259.cms", "_blank")
+    }
+  >
+    📊 Loan Insights
+  </Button>
+  <FormControlLabel
+    control={<Switch checked={darkMode} onChange={() => setDarkMode(!darkMode)} />}
+    label="Dark Mode"
+  />
+</Stack>
+
         </Stack>
 
         <Grid container spacing={3}>
@@ -275,27 +287,60 @@ function App() {
                 )}
 
                 {tab === 1 && (
-                  <Box sx={{ mt: 2, maxHeight: 400, overflow: "auto", fontSize: 14 }}>
-                    <table width="100%" border="1" style={{ borderCollapse: "collapse", color: darkMode ? "#fff" : "#000" }}>
-                      <thead>
-                        <tr style={{ background: "#1976d2", color: "#fff" }}>
-                          <th>Month</th><th>EMI</th><th>Principal</th><th>Interest</th><th>Remaining</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {result.keepEMI.schedule.slice(0, 50).map((r, i) => (
-                          <tr key={i}>
-                            <td>{r.month}</td>
-                            <td>{r.emi}</td>
-                            <td>{r.principal}</td>
-                            <td>{r.interest}</td>
-                            <td>{r.remaining}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </Box>
-                )}
+  <Box sx={{ mt: 2, maxHeight: 400, overflow: "auto", fontSize: 14 }}>
+    <table
+      width="100%"
+      border="1"
+      style={{
+        borderCollapse: "collapse",
+        color: darkMode ? "#e0e0e0" : "#000",
+        width: "100%",
+        backgroundColor: darkMode ? "#1e1e1e" : "#fff",
+      }}
+    >
+      <thead
+        style={{
+          backgroundColor: darkMode ? "#2a2a2a" : "#1976d2",
+          color: darkMode ? "#90caf9" : "#fff",
+          position: "sticky",
+          top: 0,
+          zIndex: 2,
+        }}
+      >
+        <tr>
+          <th>Month</th>
+          <th>EMI</th>
+          <th>Principal</th>
+          <th>Interest</th>
+          <th>Remaining</th>
+        </tr>
+      </thead>
+      <tbody>
+        {result.keepEMI.schedule.slice(0, 50).map((r, i) => (
+          <tr
+            key={i}
+            style={{
+              backgroundColor: darkMode
+                ? i % 2 === 0
+                  ? "#212121"
+                  : "#181818"
+                : i % 2 === 0
+                ? "#f5f5f5"
+                : "#ffffff",
+            }}
+          >
+            <td>{r.month}</td>
+            <td>{r.emi}</td>
+            <td>{r.principal}</td>
+            <td>{r.interest}</td>
+            <td>{r.remaining}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </Box>
+)}
+
               </Card>
             )}
           </Grid>
