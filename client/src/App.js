@@ -31,6 +31,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 // ✅ MAIN COMPONENT STARTS HERE
 function App() {
+  const [loading, setLoading] = useState(false);
   const [principal, setPrincipal] = useState(3200000);
   const [emi, setEmi] = useState(31231);
   const [rate, setRate] = useState(8.35);
@@ -47,26 +48,30 @@ function App() {
   };
 
   const calculate = async () => {
-    try{
-
+  try {
     setLoading(true);
-    const res = await axios.post("https://loan-prepayment-calculator.onrender.com/api/reschedule", {
-      principal,
-      annualRate: rate,
-      emi,
-      totalTenure: tenure,
-      paidEmis,
-      prepayments,
-    });
+
+    const res = await axios.post(
+      "https://loan-prepayment-calculator.onrender.com/api/reschedule",
+      {
+        principal,
+        annualRate: rate,
+        emi,
+        totalTenure: tenure,
+        paidEmis,
+        prepayments,
+      }
+    );
+
     setResult(res.data);
+  } catch (err) {
+    console.error("❌ API Error:", err);
+    alert("Something went wrong. Please check your internet or backend.");
+  } finally {
+    setLoading(false);
   }
-  catch(err){
-    console.error("Error fetching results:", err);
-      alert("Something went wrong. Please check your internet or backend.");
-  }finally {
-      setLoading(false);
-  }
-  };
+};
+
 
   const chartData = result
     ? {
@@ -189,8 +194,9 @@ function App() {
                   variant="contained"
                   startIcon={<Calculate />}
                   onClick={calculate}
+                  disabled={loading}
                 >
-                  Calculate
+                  {loading ? "Calculating..." : "Calculate"}
                 </Button>
                 <Button
                   variant="outlined"
