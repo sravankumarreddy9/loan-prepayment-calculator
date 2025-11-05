@@ -1,0 +1,8 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  margin: 0;
+}
+input { margin: 6px 0; width: 150px; }
+button { padding: 6px 10px; }
+table, th, td { border: 1px solid #ddd; font-size: 13px; padding: 6px; text-align:right; }
+th { background:#f7f7f7; text-align:center; }
