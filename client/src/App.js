@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import LoanInsights from "./LoanInsights";
 import axios from "axios";
 import {
   Container,
@@ -289,60 +290,63 @@ function App() {
                 {tab === 1 && (
   <Box sx={{ mt: 2, maxHeight: 400, overflow: "auto", fontSize: 14 }}>
     <table
-      width="100%"
-      border="1"
-      style={{
-        borderCollapse: "collapse",
-        color: darkMode ? "#e0e0e0" : "#000",
-        width: "100%",
-        backgroundColor: darkMode ? "#1e1e1e" : "#fff",
-      }}
-    >
-      <thead
+  width="100%"
+  border="1"
+  style={{
+    borderCollapse: "collapse",
+    width: "100%",
+    backgroundColor: darkMode ? "#1e1e1e" : "#fff",
+    color: darkMode ? "#f5f5f5" : "#000000", // 👈 adaptive text color
+  }}
+>
+  <thead
+    style={{
+      backgroundColor: darkMode ? "#2a2a2a" : "#e0e0e0", // 👈 softer light header
+      color: darkMode ? "#ffffff" : "#000000", // 👈 white in dark, black in light
+      position: "sticky",
+      top: 0,
+      zIndex: 2,
+    }}
+  >
+    <tr>
+      <th>Month</th>
+      <th>EMI</th>
+      <th>Principal</th>
+      <th>Interest</th>
+      <th>Remaining</th>
+    </tr>
+  </thead>
+  <tbody>
+    {result.keepEMI.schedule.slice(0, 50).map((r, i) => (
+      <tr
+        key={i}
         style={{
-          backgroundColor: darkMode ? "#2a2a2a" : "#1976d2",
-          color: darkMode ? "#90caf9" : "#fff",
-          position: "sticky",
-          top: 0,
-          zIndex: 2,
+          backgroundColor: darkMode
+            ? i % 2 === 0
+              ? "#2a2a2a"
+              : "#1a1a1a"
+            : i % 2 === 0
+            ? "#f9f9f9"
+            : "#ffffff",
+          color: darkMode ? "#f1f1f1" : "#000000", // 👈 ensures row text adapts too
         }}
       >
-        <tr>
-          <th>Month</th>
-          <th>EMI</th>
-          <th>Principal</th>
-          <th>Interest</th>
-          <th>Remaining</th>
-        </tr>
-      </thead>
-      <tbody>
-        {result.keepEMI.schedule.slice(0, 50).map((r, i) => (
-          <tr
-            key={i}
-            style={{
-              backgroundColor: darkMode
-                ? i % 2 === 0
-                  ? "#212121"
-                  : "#181818"
-                : i % 2 === 0
-                ? "#f5f5f5"
-                : "#ffffff",
-            }}
-          >
-            <td>{r.month}</td>
-            <td>{r.emi}</td>
-            <td>{r.principal}</td>
-            <td>{r.interest}</td>
-            <td>{r.remaining}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+        <td>{r.month}</td>
+        <td>{r.emi}</td>
+        <td>{r.principal}</td>
+        <td>{r.interest}</td>
+        <td>{r.remaining}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
   </Box>
 )}
 
               </Card>
             )}
+            <LoanInsights darkMode={darkMode} />
           </Grid>
         </Grid>
       </Container>
