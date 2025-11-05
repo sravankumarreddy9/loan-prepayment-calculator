@@ -223,7 +223,7 @@ function App() {
                 <Box sx={{ mt: 2, maxHeight: 400, overflow: "auto", fontSize: 14 }}>
                   <table width="100%" border="1" style={{ borderCollapse: "collapse" }}>
                     <thead>
-                      <tr style={{ background: "#1976d2", color: "#fff" }}>
+                      <tr style={{ background: "#1976d2", color: "#0a0a0aff" }}>
                         <th>Month</th><th>EMI</th><th>Principal</th><th>Interest</th><th>Remaining</th>
                       </tr>
                     </thead>
