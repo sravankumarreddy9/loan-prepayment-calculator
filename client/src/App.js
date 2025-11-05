@@ -47,7 +47,10 @@ function App() {
   };
 
   const calculate = async () => {
-    const res = await axios.post("http://localhost:4000/api/reschedule", {
+    try{
+
+    setLoading(true);
+    const res = await axios.post("https://loan-prepayment-calculator.onrender.com/api/reschedule", {
       principal,
       annualRate: rate,
       emi,
@@ -56,6 +59,13 @@ function App() {
       prepayments,
     });
     setResult(res.data);
+  }
+  catch(err){
+    console.error("Error fetching results:", err);
+      alert("Something went wrong. Please check your internet or backend.");
+  }finally {
+      setLoading(false);
+  }
   };
 
   const chartData = result
