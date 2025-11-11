@@ -1,13 +1,14 @@
-# dependencies
+# Dependencies
 node_modules/
 client/node_modules/
 server/node_modules/
 
-# build and cache files
-dist/
-build/
+# Build + Cache
 .cache/
-*.log
+client/.cache/
+build/
+dist/
 
-# environment
+# Logs + Environment
+*.log
 .env

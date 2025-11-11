@@ -55,6 +55,13 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState(0);
   const [darkMode, setDarkMode] = useState(false);
+  // 🆕 Updated Loan Scenario inputs
+const [updatedPrincipal, setUpdatedPrincipal] = useState('');
+const [updatedRate, setUpdatedRate] = useState('');
+const [updatedEmi, setUpdatedEmi] = useState('');
+const [updatedPrepayment, setUpdatedPrepayment] = useState('');
+const [comparison, setComparison] = useState(null);
+
 
   // 🟢 Fetch latest saved loan from DB on app load
   useEffect(() => {
@@ -167,6 +174,41 @@ function App() {
       setLoading(false);
     }
   };
+  // 🆕 Calculate Updated Loan
+const calculateUpdatedLoan = async () => {
+  try {
+    setLoading(true);
+
+    const res = await axios.post("https://loan-prepayment-calculator.onrender.com/api/reschedule", {
+      principal: updatedPrincipal || principal,
+      annualRate: updatedRate || rate,
+      emi: updatedEmi || emi,
+      totalTenure: tenure,
+      paidEmis,
+      prepayments: [
+        ...prepayments,
+        ...(updatedPrepayment ? [{ month: paidEmis + 1, amount: updatedPrepayment }] : []),
+      ],
+    });
+
+    const newResult = res.data;
+
+    // Compare with current result if it exists
+    if (result) {
+      const interestSaved = result.keepEMI.totalInterest - newResult.keepEMI.totalInterest;
+      const tenureReduced = result.keepEMI.monthsToFinish - newResult.keepEMI.monthsToFinish;
+      setComparison({ interestSaved, tenureReduced });
+    }
+
+    setResult(newResult);
+  } catch (error) {
+    console.error(error);
+    alert("Error calculating updated loan. Please check your inputs.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // 📊 Chart data
   const chartData = useMemo(() => {
@@ -330,6 +372,38 @@ function App() {
                     </Stack>
                   </Box>
                 )}
+                <Divider sx={{ my: 2 }} />
+
+<Typography variant="h6">Updated Loan Scenario</Typography>
+<Stack spacing={2}>
+  <TextField
+    label="Updated Principal (₹)"
+    value={updatedPrincipal}
+    onChange={(e) => setUpdatedPrincipal(Number(e.target.value))}
+  />
+  <TextField
+    label="Updated Rate p.a. (%)"
+    value={updatedRate}
+    onChange={(e) => setUpdatedRate(Number(e.target.value))}
+  />
+  <TextField
+    label="Updated EMI (₹)"
+    value={updatedEmi}
+    onChange={(e) => setUpdatedEmi(Number(e.target.value))}
+  />
+  <TextField
+    label="Additional Prepayment (₹)"
+    value={updatedPrepayment}
+    onChange={(e) => setUpdatedPrepayment(Number(e.target.value))}
+  />
+  <Button
+    variant="contained"
+    color="secondary"
+    onClick={calculateUpdatedLoan}
+  >
+    Calculate Updated Loan
+  </Button>
+</Stack>
 
                 <Divider sx={{ my: 2 }} />
                 <Stack direction="row" spacing={2} justifyContent="center">
@@ -376,12 +450,26 @@ function App() {
                   {result.reduceEMI.newEmi.toLocaleString("en-IN")} | Interest: ₹
                   {result.reduceEMI.totalInterest.toLocaleString("en-IN")}
                 </Typography>
+                {comparison && (
+  <Box sx={{ mt: 2, p: 2, border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
+    <Typography variant="subtitle1" fontWeight={600}>
+      💡 Comparison Summary
+    </Typography>
+    <Typography sx={{ mt: 1 }}>
+      <b>Interest Saved:</b> ₹{comparison.interestSaved.toLocaleString("en-IN")}
+    </Typography>
+    <Typography sx={{ mt: 1 }}>
+      <b>Tenure Reduced:</b> {comparison.tenureReduced} months
+    </Typography>
+  </Box>
+)}
 
                 {result.lastCalculatedAt && (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                     Last updated:{" "}
                     {new Date(result.lastCalculatedAt).toLocaleString("en-IN")}
                   </Typography>
+                  
                 )}
 
                 <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mt: 3 }}>
