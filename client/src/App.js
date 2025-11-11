@@ -85,25 +85,37 @@ function App() {
     setPrepayments(updated);
   };
 
-  const calculate = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.post("https://loan-prepayment-calculator.onrender.com/api/reschedule", {
-        principal,
-        annualRate: rate,
-        emi,
-        totalTenure: tenure,
-        paidEmis,
-        prepayments,
-      });
-      setResult(res.data);
-    } catch (err) {
-      console.error("❌ API Error:", err);
-      alert("Something went wrong. Please check your internet or backend.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const saveLoan = async () => {
+  await axios.post("https://loan-prepayment-calculator.onrender.com/api/loan", {
+    principal,
+    annualRate: rate,
+    emi,
+    totalTenure: tenure,
+    paidEmis,
+    prepayments,
+  });
+};
+
+const calculate = async () => {
+  try {
+    setLoading(true);
+    await saveLoan(); // 🆕 save before calculating
+    const res = await axios.post("https://loan-prepayment-calculator.onrender.com/api/reschedule", {
+      principal,
+      annualRate: rate,
+      emi,
+      totalTenure: tenure,
+      paidEmis,
+      prepayments,
+    });
+    setResult(res.data);
+  } catch (error) {
+    alert("Error calculating loan. Check connection.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const chartData = useMemo(() => {
     if (!result) return null;
