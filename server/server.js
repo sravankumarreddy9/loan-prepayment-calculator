@@ -10,16 +10,19 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: "5mb" }));
 
-// ✅ Connect to MongoDB (Replace with your MongoDB Atlas URI)
+// ✅ Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI || "mongodb+srv://<username>:<password>@cluster0.mongodb.net/loanDB", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+  .connect(process.env.MONGO_URI, {
+    tls: true,
+    serverSelectionTimeoutMS: 10000,
   })
   .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+  });
 
-// ✅ Mongoose Schema for Loan & Prepayments
+
+// ✅ Mongoose Schema
 const prepaymentSchema = new mongoose.Schema({
   month: Number,
   amount: Number,
@@ -32,7 +35,12 @@ const loanSchema = new mongoose.Schema({
   totalTenure: Number,
   paidEmis: Number,
   prepayments: [prepaymentSchema],
+  outstandingAfterPrepayments: Number,
+  keepEMI: Object,
+  reduceEMI: Object,
+  simLog: Array,
   createdAt: { type: Date, default: Date.now },
+  lastCalculatedAt: Date,
 });
 
 const Loan = mongoose.model("Loan", loanSchema);
@@ -70,12 +78,12 @@ function computeEMI(balance, monthlyRate, months) {
   return Math.round((balance * monthlyRate * factor) / (factor - 1));
 }
 
-// ✅ Save or Update Loan (new endpoint)
+// ✅ Save or Update Loan
 app.post("/api/loan", async (req, res) => {
   try {
     const { principal, annualRate, emi, totalTenure, paidEmis, prepayments } = req.body;
 
-    let loan = await Loan.findOne(); // for now, single loan record
+    let loan = await Loan.findOne();
     if (!loan) loan = new Loan({ principal, annualRate, emi, totalTenure, paidEmis, prepayments });
     else {
       loan.principal = principal;
@@ -106,7 +114,7 @@ app.get("/api/loan", async (req, res) => {
   }
 });
 
-// ✅ Recalculate — Your existing logic preserved (added DB autosave)
+// ✅ Recalculate loan
 app.post("/api/reschedule", async (req, res) => {
   try {
     const {
@@ -117,10 +125,9 @@ app.post("/api/reschedule", async (req, res) => {
       totalTenure = 180,
       paidEmis = 0,
       prepayments = [],
-      mode = "reduce_tenure",
     } = req.body;
 
-    // 🔹 Auto-save latest loan data before calculation
+    // 🔹 Find or create loan
     let loan = await Loan.findOne();
     if (!loan) loan = new Loan({ principal, annualRate, emi, totalTenure, paidEmis, prepayments });
     else {
@@ -131,11 +138,11 @@ app.post("/api/reschedule", async (req, res) => {
       loan.paidEmis = paidEmis;
       loan.prepayments = prepayments;
     }
-    await loan.save();
 
     const monthlyRate = (Number(annualRate) / 100) / 12;
     let outstanding;
 
+    // 🔹 Compute current outstanding
     if (officialSchedule && Array.isArray(officialSchedule) && officialSchedule.length >= Math.max(0, paidEmis)) {
       outstanding = paidEmis === 0
         ? (principal ? Number(principal) : Number(officialSchedule[0].Outstanding))
@@ -154,7 +161,7 @@ app.post("/api/reschedule", async (req, res) => {
       });
     }
 
-    // ✅ Prepay Map
+    // 🔹 Apply prepayments
     const prepayMap = {};
     (prepayments || []).forEach((p) => {
       const mm = Number(p.month);
@@ -163,10 +170,11 @@ app.post("/api/reschedule", async (req, res) => {
       prepayMap[mm] = (prepayMap[mm] || 0) + aa;
     });
 
-    // ✅ EMI simulation
     const simLog = [];
     let currentMonth = paidEmis;
-    const lastPrepayMonth = Object.keys(prepayMap).length ? Math.max(...Object.keys(prepayMap).map(Number)) : paidEmis;
+    const lastPrepayMonth = Object.keys(prepayMap).length
+      ? Math.max(...Object.keys(prepayMap).map(Number))
+      : paidEmis;
     const simulateTargetMonth = Math.max(lastPrepayMonth, paidEmis);
 
     while (currentMonth < simulateTargetMonth) {
@@ -205,7 +213,7 @@ app.post("/api/reschedule", async (req, res) => {
 
     const outstandingAfterPrepayments = outstanding;
 
-    // ✅ Keep EMI (reduce tenure)
+    // 🔹 Keep EMI (reduce tenure)
     let keepEMI = { monthsToFinish: 0, schedule: [], totalInterest: 0 };
     try {
       const denom = emi - outstandingAfterPrepayments * monthlyRate;
@@ -223,7 +231,7 @@ app.post("/api/reschedule", async (req, res) => {
       keepEMI.error = err.message;
     }
 
-    // ✅ Reduce EMI (keep tenure)
+    // 🔹 Reduce EMI (keep tenure)
     const monthsDone = simulateTargetMonth;
     const remainingOfficial = totalTenure - monthsDone;
     let reduceEMI = { newEmi: 0, remainingSchedule: [], totalInterest: 0 };
@@ -237,6 +245,15 @@ app.post("/api/reschedule", async (req, res) => {
       reduceEMI.totalInterest = reduceEMI.remainingSchedule.reduce((s, r) => s + r.interest, 0);
     }
 
+    // ✅ Save final calculation back to DB
+    loan.outstandingAfterPrepayments = outstandingAfterPrepayments;
+    loan.lastCalculatedAt = new Date();
+    loan.simLog = simLog;
+    loan.keepEMI = keepEMI;
+    loan.reduceEMI = reduceEMI;
+    await loan.save();
+
+    // ✅ Send result
     res.json({
       status: "ok",
       simLog,
